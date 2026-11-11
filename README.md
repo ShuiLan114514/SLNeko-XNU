@@ -1,3 +1,5 @@
+[English](README.md) · [简体中文](README.zh-CN.md)
+
 # SLNeko-XNU — iOS 16.5 on the Redmi Note 11T Pro (xaga, MT6895)
 
 This is the source tree for the **xaga** port of HakiOS: Apple's open-source Darwin/XNU
