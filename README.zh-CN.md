@@ -11,7 +11,7 @@ SpringBoard。
 [`README.hakios.md`](README.hakios.md) 和 [`docs/`](docs/)；本文件只说明 xaga
 移植部分。
 
-## 当前状态（2026 年 11 月 11 日）
+## 当前状态（2026 年 11 月 14 日）
 
 | 模块 | 状态 |
 |---|---|
@@ -21,7 +21,11 @@ SpringBoard。
 | OOBE | Hello → 上滑 → SpringBoard 主屏；工作用 root 已关闭 `bcatch` 的自动上滑。 |
 | 日志 | loader 把 HLOG logbook 写到 `iosroot` 尾部预留区最后 8 MiB（整个预留区为 200 MiB）。 |
 | 电池/充电 | 第一版：MT6375 在 I2C5（GPIO33/34 bit-bang），读取 VBAT、PWR_RDY、CHG_STAT，用电压估算 SOC 并交给 `RedwoodBattery`。属于 bring-up 质量，真正的 MT6375 库仑计尚未实现。 |
-| 非目标 | 蜂窝、蓝牙、相机采集、Apple 在线服务/激活。 |
+| 音频/扬声器 | AFE DL1/I2S3 环路和两颗 TFA9873（I2C6 `0x34`/`0x35`，revision `0x0b73`）已工作；iOS `mediaserverd` 能通过 `/dev/redwood-audio` 输出。已去掉 AFE sink 原先固定的 /64 衰减，音量改由 iOS 软件音量控制；并增加了 TFA9873 `0x52` 增益日志。仍属 bring-up 质量。 |
+| 按键 | 电源和音量加使用 MT6363 PSC 中断状态 `0x091b`（按下/松开分别有独立 bit）；音量减使用 SoC keypad `KP_MEM1` bit 0。三个键都已工作。 |
+| 显示缩放 | Preferences/Settings 使用 IOMFB selector 53，稳定 960×2079 画布、左右裁切和触控补偿；原生面板仍为 1080×2460。 |
+| Wi-Fi/蓝牙 | 进行中：MT6895 CONNSYS + MT6637/CONNAC20；Android 侧调查确认 `soc7_0` 固件系列和约 `0x18024000` 的 WFDMA。尚未有可用的 Wi-Fi/蓝牙驱动。 |
+| 非目标 | 蜂窝、相机采集、Apple 在线服务/激活。 |
 
 ## 硬件参考
 
@@ -32,6 +36,16 @@ SpringBoard。
 - **充电/电量计**：MT6375 在 **I2C5**（PMU 地址 `0x34`，电池监测
   `0x1A`）；SCL/SDA = GPIO **33/34**。
 - **显示**：1080×2460，使用 `v_display=1` 的图形 loader。
+- **音频**：AFE DL1 → I2S3 → 两颗 TFA9873（I2C6 `0x34`/`0x35`，revision
+  `0x0b73`）；`/dev/redwood-audio` 是内核 sink。
+- **按键**：电源和音量加走 MT6363 PMIC PSC 中断（`0x091b`）；音量减走
+  SoC keypad `KP_MEM1` bit 0。
+
+## 最近改动
+
+- `17e8bb0 fix(audio): restore full-scale AFE speaker output` — 去掉
+  `redwood_backlight.c` 中 `AFE_SINK_SHIFT 6`（-36 dB）的固定衰减；音量由 iOS
+  软件音量控制，并记录 TFA9873 增益寄存器。
 
 ## 构建
 

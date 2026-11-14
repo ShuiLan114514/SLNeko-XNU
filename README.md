@@ -9,7 +9,7 @@ This is the source tree for the **xaga** port of HakiOS: Apple's open-source Dar
 The tree is derived from the HakiOS `mtk` branch.  The original upstream documentation is kept in
 [`README.hakios.md`](README.hakios.md) and [`docs/`](docs/); this README only covers the xaga work.
 
-## Status (11 November 2026)
+## Status (14 November 2026)
 
 | Area | State |
 |---|---|
@@ -19,7 +19,11 @@ The tree is derived from the HakiOS `mtk` branch.  The original upstream documen
 | OOBE | Hello → swipe → SpringBoard home screen; `bcatch` auto-swipe is disabled in the working root. |
 | Logs | The loader writes an HLOG logbook to the last 8 MiB of the reserved tail of `iosroot` (a 200 MiB reserve). |
 | Battery / charger | First implementation: MT6375 on I2C5 (GPIO33/34 bit-banged), VBAT + PWR_RDY + CHG_STAT, voltage-estimated SOC into `RedwoodBattery`. It is bring-up quality; the real MT6375 coulomb counter is not implemented yet. |
-| Not a goal | Cellular, Bluetooth, camera capture, Apple online services/activation. |
+| Audio / speaker | The AFE DL1/I2S3 loop and the two TFA9873 amplifiers (I2C6 `0x34`/`0x35`, revision `0x0b73`) work; iOS `mediaserverd` reaches `/dev/redwood-audio`. The old fixed /64 AFE attenuation is removed, so iOS software volume controls the level; TFA9873 `0x52` gain logging was added. Still bring-up quality. |
+| Keys | Power and volume-up use the MT6363 PSC interrupt status `0x091b` (separate press/release bits); volume-down uses SoC keypad `KP_MEM1` bit 0. All three keys work. |
+| Display Zoom | Preferences/Settings use IOMFB selector 53 with a stable 960×2079 canvas, side crop and touch compensation; the native panel remains 1080×2460. |
+| Wi-Fi / Bluetooth | In progress: MT6895 CONNSYS with MT6637/CONNAC20; Android-side survey confirms the `soc7_0` firmware family and WFDMA around `0x18024000`. No functional Wi-Fi/BT driver yet. |
+| Not a goal | Cellular, camera capture, Apple online services/activation. |
 
 ## Hardware reference
 
@@ -29,6 +33,16 @@ The tree is derived from the HakiOS `mtk` branch.  The original upstream documen
 - **Charger / gauge** MT6375 on **I2C5** (PMU address `0x34`, battery-monitor `0x1A`);
   SCL/SDA = GPIO **33/34**.
 - **Display** 1080×2460, `v_display=1` graphics loader.
+- **Audio** AFE DL1 → I2S3 → two TFA9873 amplifiers on I2C6 (`0x34`/`0x35`, revision
+  `0x0b73`); `/dev/redwood-audio` is the kernel sink.
+- **Keys** power and volume-up are MT6363 PMIC PSC interrupts (`0x091b`); volume-down is
+  the SoC keypad `KP_MEM1` bit 0.
+
+## Recent changes
+
+- `17e8bb0 fix(audio): restore full-scale AFE speaker output` — removed the old
+  `AFE_SINK_SHIFT 6` (-36 dB) attenuation in `redwood_backlight.c`; iOS volume now sets
+  the speaker level, and the TFA9873 gain register is logged.
 
 ## Build
 
